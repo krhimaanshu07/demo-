@@ -1,0 +1,129 @@
+You are building a full-stack DICOM viewer + simple “Gen AI DR” demo with a 3-page flow.
+
+## Tech Stack
+- Frontend: React + Vite + TypeScript + React Router + Tailwind CSS.
+- DICOM viewer: cornerstone-core, cornerstone-tools (or cornerstone3D if simpler), cornerstone-wado-image-loader, dicom-parser.
+- Backend: Node.js + Express + Multer for file uploads.
+- Storage: keep files in a local `/server/uploads` folder; serve them statically.
+
+## App Goals (match exactly)
+We have 3 pages:
+
+### Page 1 (Upload)
+- A centered card with:
+  - An **Upload icon**.
+  - **Drag & Drop** area + “Click to browse” file picker.
+  - **Accept only DICOM (.dcm) files**. Validate extension and basic DICOM magic bytes if easy.
+  - A **Submit** button.
+- Behavior:
+  - When a user drops/selects a DICOM file and clicks **Submit**, POST it to `POST /api/upload`.
+  - On success, navigate to **Page 2** with a query param or route param carrying `fileId`.
+- Error handling:
+  - Show toast/errors for wrong types or server errors.
+- Nice-to-have:
+  - Show file name and size once selected.
+
+### Page 2 (Viewer + DICOM Info)
+- Layout: two panels (responsive):
+  - **Left:** DICOM viewport using cornerstone to **render the uploaded image**.
+  - **Right:** **DICOM Info** panel listing common tags:
+    - PatientName, PatientID, StudyDate, StudyDescription, Modality, Rows, Columns, BitsAllocated, PixelSpacing (if present), etc.
+- Add a footer with a primary button: **“Convert to Gen AI DR”**.
+- Behavior:
+  - Clicking the button calls `POST /api/process/:fileId` which simulates a high-resolution/processed output. For now, return a **dummy DICOM** (can be the same file re-served under a different id, or a bundled sample .dcm in `/server/samples/processed.dcm`).
+  - On success, navigate to **Page 3** with `fileId` and `resultId` (IDs returned by backend).
+
+### Page 3 (Compare + Info + Download)
+- Left main area: **Before/After slider** comparing:
+  - Left side: **uploaded image**.
+  - Right side: **processed (dummy) image**.
+  Implement a draggable vertical handle to reveal more/less of each image. Use two stacked cornerstone viewports or a canvas overlay approach.
+- Right side: **DICOM Info** panel (show the processed file’s tags).
+- Footer:
+  - **Download icon** + **Download button** that download the **processed image as .dcm** via `GET /api/download/:resultId`.
+  - Also allow downloading the original via `GET /api/download/:fileId` (optional secondary button).
+- Ensure downloads serve the file with `Content-Disposition: attachment; filename="<id>.dcm"`.
+
+## Backend API
+Create an Express server in `/server` with:
+
+1) `POST /api/upload`
+   - Use Multer single file upload field name: `file`.
+   - Only accept `.dcm`.
+   - Save to `/server/uploads/<generatedId>.dcm`.
+   - Parse minimal metadata server-side (optional) and return JSON:
+     ```
+     { success: true, fileId: "<id>", url: "/uploads/<id>.dcm" }
+     ```
+   - Also return a few detected tags if you can (but Page 2 will parse on the client anyway).
+
+2) `GET /api/file/:id`
+   - Returns the local file path/URL for the DICOM so the frontend can load it in cornerstone.
+
+3) `POST /api/process/:fileId`
+   - Simulate “Gen AI DR” output.
+   - Implementation options (choose one):
+     a) Copy the source DICOM to a new file `<resultId>.dcm` and return it, OR
+     b) Serve a bundled sample DICOM from `/server/samples/processed.dcm` copied to `<resultId>.dcm`.
+   - Return:
+     ```
+     { success: true, resultId: "<resultId>", url: "/uploads/<resultId>.dcm" }
+     ```
+
+4) `GET /api/download/:id`
+   - Streams the corresponding `.dcm` from `/server/uploads` with appropriate headers for download.
+
+- Serve `/server/uploads` statically at `/uploads`.
+- CORS enabled for local dev.
+
+## Frontend Details
+- Routes:
+  - `/` → Page 1 (Upload)
+  - `/viewer/:fileId` → Page 2 (Viewer + DICOM Info)
+  - `/compare/:fileId/:resultId` → Page 3 (Slider + DICOM Info + Downloads)
+- State management: keep it simple (URL params + local component state).
+- Create a **DICOMService** helper for:
+  - Loading a DICOM into cornerstone from a file URL (using cornerstoneWADOImageLoader).
+  - Extracting common tags via dicom-parser (PatientName, StudyDate…).
+- Components:
+  - `UploadCard` (drag&drop + browse + submit)
+  - `DicomViewport` (wraps cornerstone init/mount/unmount)
+  - `DicomInfoPanel` (key/value list of tags)
+  - `BeforeAfterSlider` (two viewports overlapped with a draggable vertical divider)
+  - `FooterBar` (buttons)
+- UI/UX:
+  - Tailwind + clean dark/light theme; center content, rounded cards, hover states.
+  - Disable buttons while network in-flight; show loading spinners.
+  - Show toasts (e.g., a lightweight custom or a tiny lib) for success/errors.
+
+## Cornerstone Setup
+- Configure cornerstone + cornerstone-wado-image-loader with web worker and codecs if needed; otherwise use the simplest setup that can load local DICOM via URL.
+- Example imageId form: `wadouri:` + absolute URL to `/uploads/<id>.dcm`.
+- Ensure the viewer resizes properly on container changes.
+
+## Validation and Edge Cases
+- Reject non-`.dcm` files on Page 1 with a friendly message.
+- Handle large files (set a sensible size limit e.g., 100 MB).
+- If any route param is missing or the file can’t be found, show an inline error with a back button.
+
+## Project Structure
+- `/client` (Vite React app)
+- `/server` (Express app)
+- Root scripts:
+  - `npm run dev` → concurrently run client and server (use `concurrently`).
+  - `npm run client` / `npm run server` for individual runs.
+
+## Acceptance Criteria (must pass)
+1) I can upload a `.dcm` via drag&drop, click Submit, and I’m redirected to `/viewer/<fileId>`.
+2) Page 2 renders the DICOM in a viewport and shows a non-empty tag list.
+3) Clicking **Convert to Gen AI DR** calls the backend and redirects to `/compare/<fileId>/<resultId>`.
+4) Page 3 shows a working **before/after slider** between original and processed images.
+5) The **Download icon** and **Download button** both download a `.dcm` file for the processed image.
+6) Refreshing any page with valid IDs still loads correctly.
+7) The UI is neat, responsive, and has basic loading/error states.
+
+## Extras (if quick)
+- Add a small header with the app title on all pages.
+- On Page 3, add a tiny “swap” icon to flip which image is left/right in the slider.
+
+Please generate all code, install dependencies, and provide run instructions.
