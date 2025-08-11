@@ -71,8 +71,8 @@ export function DicomInfoPanel({ fileInfo, isProcessed = false }: DicomInfoPanel
           </p>
         )}
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto">
-        <div className="space-y-6">
+      <CardContent className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-320px)]">
+        <div className="space-y-6 pr-2">
           {isProcessed && (
             <InfoSection
               title="AI Processing"

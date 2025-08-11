@@ -40,16 +40,18 @@ export default function Viewer() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-        <div className="lg:col-span-2">
-          <DicomViewport fileInfo={fileInfo} />
-        </div>
-        <div className="lg:col-span-1">
-          <DicomInfoPanel fileInfo={fileInfo} />
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
+          <div className="lg:col-span-2">
+            <DicomViewport fileInfo={fileInfo} />
+          </div>
+          <div className="lg:col-span-1">
+            <DicomInfoPanel fileInfo={fileInfo} />
+          </div>
         </div>
       </div>
-      <div className="mt-6">
+      <div className="mt-auto max-w-7xl mx-auto px-4 pb-6 w-full">
         <FooterBar 
           type="process" 
           fileId={fileId!}
