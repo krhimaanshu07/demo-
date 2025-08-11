@@ -47,12 +47,14 @@ export function DicomInfoPanel({ fileInfo, isProcessed = false }: DicomInfoPanel
 
   const InfoSection = ({ title, items }: { title: string; items: Array<{ label: string; value: string | number | undefined }> }) => (
     <div className="space-y-2">
-      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{title}</h4>
+      <h4 className="text-sm sm:text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">{title}</h4>
       <div className="space-y-2">
         {items.map(({ label, value }, index) => (
-          <div key={index} className="flex justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400">{label}:</span>
-            <span className="text-sm font-medium text-gray-900 dark:text-white">
+          <div key={index} className="flex justify-between items-start gap-2">
+            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex-shrink-0">
+              {label}:
+            </span>
+            <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white text-right break-words">
               {value || 'N/A'}
             </span>
           </div>
@@ -63,16 +65,18 @@ export function DicomInfoPanel({ fileInfo, isProcessed = false }: DicomInfoPanel
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>{isProcessed ? 'Enhanced Image Info' : 'DICOM Information'}</CardTitle>
+      <CardHeader className="pb-3 sm:pb-4">
+        <CardTitle className="text-lg sm:text-xl">
+          {isProcessed ? 'Enhanced Image Info' : 'DICOM Information'}
+        </CardTitle>
         {isProcessed && (
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             AI-processed DICOM metadata
           </p>
         )}
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-320px)]">
-        <div className="space-y-6 pr-2">
+      <CardContent className="flex-1 overflow-y-auto p-3 sm:p-4 max-h-[calc(100vh-320px)]">
+        <div className="space-y-4 sm:space-y-6 pr-1 sm:pr-2">
           {isProcessed && (
             <InfoSection
               title="AI Processing"

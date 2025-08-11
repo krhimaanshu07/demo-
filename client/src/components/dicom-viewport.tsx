@@ -73,36 +73,36 @@ export function DicomViewport({ fileInfo }: DicomViewportProps) {
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg font-semibold">DICOM Viewer</CardTitle>
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={handleZoomIn} title="Zoom In">
-            <ZoomIn className="h-4 w-4" />
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-3 sm:pb-4">
+        <CardTitle className="text-base sm:text-lg font-semibold">DICOM Viewer</CardTitle>
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          <Button variant="ghost" size="sm" onClick={handleZoomIn} title="Zoom In" className="p-1.5 sm:p-2">
+            <ZoomIn className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleZoomOut} title="Zoom Out">
-            <ZoomOut className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={handleZoomOut} title="Zoom Out" className="p-1.5 sm:p-2">
+            <ZoomOut className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset View">
-            <Maximize className="h-4 w-4" />
+          <Button variant="ghost" size="sm" onClick={handleReset} title="Reset View" className="p-1.5 sm:p-2">
+            <Maximize className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-4">
+      <CardContent className="flex-1 p-2 sm:p-4">
         <div className="h-full rounded-lg bg-black relative overflow-hidden">
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-2 border-primary border-t-transparent"></div>
             </div>
           )}
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-red-500">{error}</p>
+            <div className="absolute inset-0 flex items-center justify-center z-10 p-4">
+              <p className="text-red-500 text-sm sm:text-base text-center">{error}</p>
             </div>
           )}
           <div
             ref={elementRef}
             className="w-full h-full"
-            style={{ minHeight: '400px' }}
+            style={{ minHeight: '300px' }}
           />
         </div>
       </CardContent>

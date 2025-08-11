@@ -86,13 +86,15 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
   if (type === 'process') {
     return (
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Bot className="text-primary text-xl" />
-              <div>
-                <h4 className="font-semibold text-gray-900 dark:text-white">Gen AI DR Processing</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Bot className="text-primary w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+              <div className="min-w-0">
+                <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
+                  Gen AI DR Processing
+                </h4>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                   Enhance image quality using artificial intelligence
                 </p>
               </div>
@@ -100,10 +102,11 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
             <Button
               onClick={handleProcess}
               disabled={processMutation.isPending}
-              className="px-6 py-3 flex items-center space-x-2"
+              className="px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-center space-x-2 w-full sm:w-auto"
+              size="sm"
             >
               <Bot className="w-4 h-4" />
-              <span>
+              <span className="text-sm">
                 {processMutation.isPending ? 'Processing...' : 'Convert to Gen AI DR'}
               </span>
             </Button>
@@ -115,33 +118,37 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
 
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Download className="text-primary text-xl" />
-            <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white">Download Options</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <Download className="text-primary w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+            <div className="min-w-0">
+              <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
+                Download Options
+              </h4>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                 Save the enhanced DICOM image
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
             <Button
               variant="outline"
               onClick={() => handleDownload(fileId, 'original_image.dcm')}
-              className="flex items-center space-x-2"
+              className="flex items-center justify-center space-x-2 w-full sm:w-auto"
+              size="sm"
             >
               <FileDown className="w-4 h-4" />
-              <span>Original</span>
+              <span className="text-sm">Original</span>
             </Button>
             <Button
               onClick={() => handleDownload(resultId!, 'enhanced_image.dcm')}
               disabled={!resultId}
-              className="flex items-center space-x-2"
+              className="flex items-center justify-center space-x-2 w-full sm:w-auto"
+              size="sm"
             >
               <Download className="w-4 h-4" />
-              <span>Enhanced DICOM</span>
+              <span className="text-sm">Enhanced DICOM</span>
             </Button>
           </div>
         </div>

@@ -113,9 +113,9 @@ export default function UploadCard() {
 
   return (
     <Card className="animate-slide-up">
-      <CardContent className="p-8">
+      <CardContent className="p-4 sm:p-6 lg:p-8">
         <div
-          className={`border-2 border-dashed rounded-lg p-12 text-center transition-all duration-200 cursor-pointer ${
+          className={`border-2 border-dashed rounded-lg p-6 sm:p-8 lg:p-12 text-center transition-all duration-200 cursor-pointer ${
             dragActive
               ? 'border-primary bg-blue-50 dark:bg-blue-950'
               : 'border-gray-300 dark:border-slate-600 hover:border-primary hover:bg-gray-50 dark:hover:bg-slate-700'
@@ -126,18 +126,18 @@ export default function UploadCard() {
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="flex justify-center">
-              <CloudUpload className="h-16 w-16 text-gray-400 dark:text-slate-500" />
+              <CloudUpload className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 text-gray-400 dark:text-slate-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Drop DICOM file here
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 or <span className="text-primary font-medium">click to browse</span>
               </p>
-              <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-2">
                 Supports .dcm files up to 100MB
               </p>
             </div>
@@ -153,14 +153,14 @@ export default function UploadCard() {
         />
 
         {selectedFile && (
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <FileText className="text-primary text-xl" />
-              <div className="flex-1">
-                <p className="font-medium text-gray-900 dark:text-white">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <FileText className="text-primary w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base truncate">
                   {selectedFile.name}
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                   {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
                 </p>
               </div>
@@ -168,7 +168,7 @@ export default function UploadCard() {
                 variant="ghost"
                 size="sm"
                 onClick={removeFile}
-                className="p-2"
+                className="p-1.5 sm:p-2 flex-shrink-0"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -176,20 +176,20 @@ export default function UploadCard() {
           </div>
         )}
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-6 sm:mt-8 flex justify-center">
           <Button
             onClick={handleUpload}
             disabled={!selectedFile || uploadMutation.isPending}
-            className="px-8 py-3 flex items-center space-x-2"
+            className="px-6 sm:px-8 py-2.5 sm:py-3 flex items-center space-x-2 w-full sm:w-auto"
           >
-            <span>
+            <span className="text-sm sm:text-base">
               {uploadMutation.isPending
                 ? 'Uploading...'
                 : selectedFile
                 ? 'Upload & Analyze'
                 : 'Select a file to continue'}
             </span>
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4 ml-1 sm:ml-2" />
           </Button>
         </div>
       </CardContent>

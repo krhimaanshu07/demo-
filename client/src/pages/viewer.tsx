@@ -41,24 +41,38 @@ export default function Viewer() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
-          <div className="lg:col-span-2">
-            <DicomViewport fileInfo={fileInfo} />
-          </div>
-          <div className="lg:col-span-1">
-            <DicomInfoPanel fileInfo={fileInfo} />
+      <div className="flex-1 w-full px-2 sm:px-4 py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Mobile layout: Stack vertically */}
+          <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* DICOM Viewport */}
+            <div className="lg:col-span-2 order-1">
+              <div className="h-[50vh] sm:h-[60vh] lg:h-[calc(100vh-280px)]">
+                <DicomViewport fileInfo={fileInfo} />
+              </div>
+            </div>
+            
+            {/* DICOM Info Panel */}
+            <div className="lg:col-span-1 order-2">
+              <div className="h-[40vh] sm:h-[50vh] lg:h-[calc(100vh-280px)]">
+                <DicomInfoPanel fileInfo={fileInfo} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div className="mt-auto max-w-7xl mx-auto px-4 pb-6 w-full">
-        <FooterBar 
-          type="process" 
-          fileId={fileId!}
-          onProcess={() => {
-            // Navigation will be handled by the FooterBar component
-          }}
-        />
+      
+      {/* Footer */}
+      <div className="mt-auto w-full px-2 sm:px-4 pb-4 sm:pb-6">
+        <div className="max-w-7xl mx-auto">
+          <FooterBar 
+            type="process" 
+            fileId={fileId!}
+            onProcess={() => {
+              // Navigation will be handled by the FooterBar component
+            }}
+          />
+        </div>
       </div>
     </div>
   );

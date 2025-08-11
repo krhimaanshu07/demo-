@@ -64,6 +64,15 @@ export function BeforeAfterSlider({ originalFile, processedFile }: BeforeAfterSl
     setSliderPosition(percentage);
   };
 
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isDragging || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setSliderPosition(percentage);
+  };
+
   const handleMouseUp = () => {
     setIsDragging(false);
   };
@@ -72,17 +81,26 @@ export function BeforeAfterSlider({ originalFile, processedFile }: BeforeAfterSl
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleMouseUp);
       document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
     } else {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleMouseUp);
       document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     }
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleMouseUp);
       document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     };
   }, [isDragging]);
 
@@ -92,26 +110,26 @@ export function BeforeAfterSlider({ originalFile, processedFile }: BeforeAfterSl
 
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg font-semibold">Before / After Comparison</CardTitle>
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" onClick={handleSwap} title="Swap Images">
-            <ArrowLeftRight className="h-4 w-4" />
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-3 sm:pb-4">
+        <CardTitle className="text-base sm:text-lg font-semibold truncate">Before / After Comparison</CardTitle>
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          <Button variant="ghost" size="sm" onClick={handleSwap} title="Swap Images" className="p-1.5 sm:p-2">
+            <ArrowLeftRight className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
-          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">
+          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded hidden sm:inline">
             Drag to compare
           </span>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-4">
+      <CardContent className="flex-1 p-2 sm:p-4">
         <div
           ref={containerRef}
-          className="relative h-full rounded-lg overflow-hidden bg-black"
-          style={{ minHeight: '400px' }}
+          className="relative h-full rounded-lg overflow-hidden bg-black touch-pan-x"
+          style={{ minHeight: '300px' }}
         >
           {!imagesLoaded && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-2 border-primary border-t-transparent"></div>
             </div>
           )}
           
@@ -124,7 +142,7 @@ export function BeforeAfterSlider({ originalFile, processedFile }: BeforeAfterSl
               ref={originalViewportRef}
               className="w-full h-full"
             />
-            <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+            <div className="absolute top-1 sm:top-2 left-1 sm:left-2 bg-black bg-opacity-70 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs">
               {isSwapped ? 'AI ENHANCED' : 'ORIGINAL'}
             </div>
           </div>
@@ -138,18 +156,22 @@ export function BeforeAfterSlider({ originalFile, processedFile }: BeforeAfterSl
               ref={processedViewportRef}
               className="w-full h-full"
             />
-            <div className="absolute top-2 right-2 bg-primary bg-opacity-90 text-white px-2 py-1 rounded text-xs">
+            <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-primary bg-opacity-90 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs">
               {isSwapped ? 'ORIGINAL' : 'AI ENHANCED'}
             </div>
           </div>
 
           {/* Slider Handle */}
           <div
-            className="absolute top-0 h-full w-1 bg-primary cursor-ew-resize z-20"
+            className="absolute top-0 h-full w-0.5 sm:w-1 bg-primary cursor-ew-resize z-20 touch-manipulation"
             style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
             onMouseDown={handleMouseDown}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
           >
-            <div className="absolute top-1/2 left-1/2 w-5 h-5 bg-primary border-3 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-md"></div>
+            <div className="absolute top-1/2 left-1/2 w-4 h-4 sm:w-5 sm:h-5 bg-primary border-2 sm:border-3 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2 shadow-md"></div>
           </div>
         </div>
       </CardContent>
