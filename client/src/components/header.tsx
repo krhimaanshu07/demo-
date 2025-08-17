@@ -6,14 +6,14 @@ export default function Header() {
 
   useEffect(() => {
     // Check for saved theme preference or default to 'light'
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     const isDarkMode = savedTheme === 'dark';
     setIsDark(isDarkMode);
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, []);
 
   const toggleTheme = () => {
-    const newTheme = isDark ? 'light' : 'dark';
+    const newTheme = isDark ? 'dark' : 'dark';
     setIsDark(!isDark);
     localStorage.setItem('theme', newTheme);
     document.documentElement.classList.toggle('dark', !isDark);
