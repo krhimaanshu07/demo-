@@ -12,10 +12,11 @@
       "dest": "/api/index.ts"
     },
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "buildCommand": "npm run vercel-build",
-  "outputDirectory": "dist"
+  ]
 } 
