@@ -1,19 +1,24 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Bot, Download, FileDown } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { ProcessResponse } from '@shared/schema';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Bot, Download, FileDown } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { ProcessResponse } from "@shared/schema";
 
 interface FooterBarProps {
-  type: 'process' | 'download';
+  type: "process" | "download";
   fileId: string;
   resultId?: string;
   onProcess?: () => void;
 }
 
-export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps) {
+export function FooterBar({
+  type,
+  fileId,
+  resultId,
+  onProcess,
+}: FooterBarProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -21,12 +26,12 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
   const processMutation = useMutation({
     mutationFn: async (fileId: string) => {
       const response = await fetch(`/api/process/${fileId}`, {
-        method: 'POST',
+        method: "POST",
       });
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || 'Processing failed');
+        throw new Error(error || "Processing failed");
       }
 
       return response.json() as Promise<ProcessResponse>;
@@ -55,14 +60,14 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
   const handleDownload = async (downloadFileId: string, filename: string) => {
     try {
       const response = await fetch(`/api/download/${downloadFileId}`);
-      
+
       if (!response.ok) {
-        throw new Error('Download failed');
+        throw new Error("Download failed");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
@@ -83,7 +88,7 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
     }
   };
 
-  if (type === 'process') {
+  if (type === "process") {
     return (
       <Card>
         <CardContent className="p-3 sm:p-4">
@@ -92,7 +97,7 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
               <Bot className="text-primary w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
               <div className="min-w-0">
                 <h4 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                  Gen AI DR Processing
+                  GenAI DR Processing
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                   Enhance image quality using artificial intelligence
@@ -100,6 +105,7 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
               </div>
             </div>
             <Button
+              variant="outline"
               onClick={handleProcess}
               disabled={processMutation.isPending}
               className="px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-center space-x-2 w-full sm:w-auto"
@@ -107,7 +113,9 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
             >
               <Bot className="w-4 h-4" />
               <span className="text-sm">
-                {processMutation.isPending ? 'Processing...' : 'Convert to Gen AI DR'}
+                {processMutation.isPending
+                  ? "Processing..."
+                  : "Convert to GenAI DR"}
               </span>
             </Button>
           </div>
@@ -131,24 +139,25 @@ export function FooterBar({ type, fileId, resultId, onProcess }: FooterBarProps)
               </p>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto ">
             <Button
               variant="outline"
-              onClick={() => handleDownload(fileId, 'original_image.dcm')}
+              onClick={() => handleDownload(fileId, "CR.dcm")}
               className="flex items-center justify-center space-x-2 w-full sm:w-auto"
               size="sm"
             >
               <FileDown className="w-4 h-4" />
-              <span className="text-sm">Original</span>
+              <span className="text-sm">CR</span>
             </Button>
             <Button
-              onClick={() => handleDownload(resultId!, 'enhanced_image.dcm')}
+              variant="outline"
+              onClick={() => handleDownload(resultId!, "GenAI DR.dcm")}
               disabled={!resultId}
               className="flex items-center justify-center space-x-2 w-full sm:w-auto"
               size="sm"
             >
               <Download className="w-4 h-4" />
-              <span className="text-sm">Enhanced DICOM</span>
+              <span className="text-sm">GenAI DR</span>
             </Button>
           </div>
         </div>

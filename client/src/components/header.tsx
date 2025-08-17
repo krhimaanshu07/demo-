@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Stethoscope, Moon, Sun } from 'lucide-react';
 
 export default function Header() {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     // Check for saved theme preference or default to 'light'
@@ -20,7 +20,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50">
+    <header className="bg-white dark:bg-black shadow-sm border-b border-gray-200 dark:border-black sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
           <div className="flex items-center space-x-2 sm:space-x-3">
@@ -31,17 +31,17 @@ export default function Header() {
             </h1>
           </div>
           <div className="flex items-center">
-            <button 
+            {/* <button 
               onClick={toggleTheme}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
               aria-label="Toggle theme"
             >
               {isDark ? (
-                <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
               ) : (
                 <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
               )}
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

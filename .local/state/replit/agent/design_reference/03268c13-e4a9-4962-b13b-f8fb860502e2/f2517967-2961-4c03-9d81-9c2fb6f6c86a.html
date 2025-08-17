@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DICOM AI Viewer - Medical Image Processing Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563EB',
+                        secondary: '#64748B',
+                        success: '#10B981',
+                        surface: '#FFFFFF',
+                        'surface-dark': '#1E293B',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    }
+                }
+            },
+            darkMode: 'class'
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .dicom-viewport {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 50%, transparent 50%);
+            background-size: 20px 20px, 20px 20px;
+        }
+        .before-after-slider {
+            position: relative;
+            overflow: hidden;
+        }
+        .slider-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #2563EB;
+            cursor: ew-resize;
+            z-index: 10;
+            transform: translateX(-50%);
+        }
+        .slider-handle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            background: #2563EB;
+            border: 3px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .image-comparison {
+            display: flex;
+            height: 100%;
+        }
+        .before-image {
+            flex: 0 0 50%;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        }
+        .after-image {
+            flex: 1;
+            background: linear-gradient(135deg, #0f4c75 0%, #3282b8 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-900 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-stethoscope text-primary text-xl"></i>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">DICOM AI Viewer</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="theme-toggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                        <i class="fas fa-moon dark:hidden text-gray-600"></i>
+                        <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Navigation Tabs -->
+    <div class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav class="flex space-x-8" aria-label="Pages">
+                <button class="page-tab active border-b-2 border-primary text-primary px-1 py-4 text-sm font-medium" data-page="upload">
+                    <i class="fas fa-upload mr-2"></i>Upload
+                </button>
+                <button class="page-tab border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-4 text-sm font-medium" data-page="viewer">
+                    <i class="fas fa-eye mr-2"></i>Viewer
+                </button>
+                <button class="page-tab border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-4 text-sm font-medium" data-page="compare">
+                    <i class="fas fa-exchange-alt mr-2"></i>Compare
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 z-50 transform translate-x-full transition-transform duration-300">
+        <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-4 flex items-center space-x-3">
+            <div class="flex-shrink-0">
+                <i class="fas fa-check-circle text-success"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white" id="toast-message">Operation completed successfully</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 1: Upload -->
+    <div id="page-upload" class="page-content">
+        <div class="max-w-2xl mx-auto px-4 py-12">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Upload DICOM File</h2>
+                <p class="text-gray-600 dark:text-gray-400">Select or drag & drop your DICOM file to begin analysis</p>
+            </div>
+
+            <!-- @COMPONENT: UploadCard [drag&drop + browse + submit] -->
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 animate-slide-up">
+                <div id="upload-area" class="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-12 text-center hover:border-primary hover:bg-gray-50 dark:hover:bg-slate-700 transition-all duration-200 cursor-pointer">
+                    <div class="space-y-4">
+                        <div class="flex justify-center">
+                            <i class="fas fa-cloud-upload-alt text-6xl text-gray-400 dark:text-slate-500"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Drop DICOM file here</h3>
+                            <p class="text-gray-600 dark:text-gray-400">or <span class="text-primary font-medium">click to browse</span></p>
+                            <p class="text-sm text-gray-500 dark:text-slate-400 mt-2">Supports .dcm files up to 100MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="file" id="file-input" class="hidden" accept=".dcm" data-mock="true">
+
+                <!-- File Info Display -->
+                <div id="file-info" class="hidden mt-6 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-file-medical text-primary text-xl"></i>
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white" data-bind="file.name">sample_chest_xray.dcm</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400" data-bind="file.size">2.4 MB</p>
+                        </div>
+                        <button class="ml-auto p-2 hover:bg-gray-200 dark:hover:bg-slate-600 rounded">
+                            <i class="fas fa-times text-gray-500"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="mt-8 flex justify-center">
+                    <button id="upload-submit" class="bg-primary hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2" data-event="click:handleUpload" disabled>
+                        <span id="submit-text">Select a file to continue</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: UploadCard -->
+        </div>
+    </div>
+
+    <!-- Page 2: Viewer + DICOM Info -->
+    <div id="page-viewer" class="page-content hidden">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+                <!-- Left Panel: DICOM Viewport -->
+                <!-- @COMPONENT: DicomViewport [wraps cornerstone init/mount/unmount] -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 h-full flex flex-col">
+                        <div class="p-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">DICOM Viewer</h3>
+                            <div class="flex items-center space-x-2">
+                                <button class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Zoom In">
+                                    <i class="fas fa-search-plus text-gray-600 dark:text-gray-400"></i>
+                                </button>
+                                <button class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Zoom Out">
+                                    <i class="fas fa-search-minus text-gray-600 dark:text-gray-400"></i>
+                                </button>
+                                <button class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Reset View">
+                                    <i class="fas fa-expand-arrows-alt text-gray-600 dark:text-gray-400"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1 p-4">
+                            <!-- A chest X-ray medical scan showing clear lung field visualization -->
+                            <div class="dicom-viewport rounded-lg h-full flex items-center justify-center relative overflow-hidden" data-implementation="Use cornerstone to render DICOM here">
+                                <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" 
+                                     alt="Chest X-ray medical scan" 
+                                     class="max-w-full max-h-full object-contain opacity-80" 
+                                     data-mock-image="true" />
+                                <div class="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                                    <span data-bind="dicom.patientId">P001</span>
+                                </div>
+                                <div class="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                                    <span data-bind="dicom.studyDate">2024-01-15</span>
+                                </div>
+                                <div class="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                                    <span data-bind="dicom.modality">CR</span> • <span data-bind="dicom.dimensions">2048x2048</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DicomViewport -->
+
+                <!-- Right Panel: DICOM Info -->
+                <!-- @COMPONENT: DicomInfoPanel [key/value list of tags] -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 h-full flex flex-col">
+                        <div class="p-4 border-b border-gray-200 dark:border-slate-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">DICOM Information</h3>
+                        </div>
+                        <div class="flex-1 p-4 overflow-y-auto">
+                            <div class="space-y-4">
+                                <!-- Patient Information -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Patient Information</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Patient Name:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.patientName">John Doe</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Patient ID:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.patientId">P001234</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Birth Date:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.birthDate">1985-03-15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Sex:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.sex">M</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Study Information -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Study Information</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Study Date:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.studyDate">2024-01-15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Study Description:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.studyDescription">Chest X-Ray PA</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Modality:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.modality">CR</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Institution:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.institution">General Hospital</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Image Information -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Image Information</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Rows:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.rows">2048</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Columns:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.columns">2048</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Bits Allocated:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.bitsAllocated">16</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Pixel Spacing:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.pixelSpacing">0.168\0.168</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Window Width:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.windowWidth">2000</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Window Center:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.windowCenter">400</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DicomInfoPanel -->
+            </div>
+
+            <!-- Footer with Action Button -->
+            <!-- @COMPONENT: FooterBar [buttons] -->
+            <div class="mt-6">
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-robot text-primary text-xl"></i>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white">Gen AI DR Processing</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Enhance image quality using artificial intelligence</p>
+                            </div>
+                        </div>
+                        <button id="process-btn" class="bg-primary hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2" data-event="click:handleProcess">
+                            <i class="fas fa-magic"></i>
+                            <span>Convert to Gen AI DR</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: FooterBar -->
+        </div>
+    </div>
+
+    <!-- Page 3: Compare + Info + Download -->
+    <div id="page-compare" class="page-content hidden">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+                <!-- Left Panel: Before/After Slider -->
+                <!-- @COMPONENT: BeforeAfterSlider [two viewports overlapped with draggable divider] -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 h-full flex flex-col">
+                        <div class="p-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Before / After Comparison</h3>
+                            <div class="flex items-center space-x-2">
+                                <button class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Swap Images">
+                                    <i class="fas fa-exchange-alt text-gray-600 dark:text-gray-400"></i>
+                                </button>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">Drag to compare</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 p-4">
+                            <!-- @FUNCTIONALITY: Before/after slider should implement draggable vertical handle -->
+                            <div class="before-after-slider rounded-lg h-full relative overflow-hidden">
+                                <div class="image-comparison h-full">
+                                    <!-- Before Image (Original) -->
+                                    <!-- Original chest X-ray before AI enhancement processing -->
+                                    <div class="before-image flex items-center justify-center relative">
+                                        <img src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" 
+                                             alt="Original chest X-ray" 
+                                             class="max-w-full max-h-full object-contain opacity-70" />
+                                        <div class="absolute top-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                                            ORIGINAL
+                                        </div>
+                                    </div>
+                                    <!-- After Image (Enhanced) -->
+                                    <!-- Enhanced chest X-ray after AI processing showing improved clarity and detail -->
+                                    <div class="after-image flex items-center justify-center relative">
+                                        <img src="https://pixabay.com/get/g4c58b54b7e2c657347b3b95869c9ea614fddbef02fac33d6d2544fbec2cf874d250ac66881b4bfb3faaad7d036d72e2c_1280.jpg" 
+                                             alt="Enhanced chest X-ray after AI processing" 
+                                             class="max-w-full max-h-full object-contain opacity-90" />
+                                        <div class="absolute top-2 right-2 bg-primary bg-opacity-90 text-white px-2 py-1 rounded text-xs">
+                                            AI ENHANCED
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Draggable Slider Handle -->
+                                <div class="slider-handle" data-implementation="Implement draggable functionality"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: BeforeAfterSlider -->
+
+                <!-- Right Panel: Processed DICOM Info -->
+                <!-- @COMPONENT: DicomInfoPanel [processed file's tags] -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 h-full flex flex-col">
+                        <div class="p-4 border-b border-gray-200 dark:border-slate-700">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Enhanced Image Info</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">AI-processed DICOM metadata</p>
+                        </div>
+                        <div class="flex-1 p-4 overflow-y-auto">
+                            <div class="space-y-4">
+                                <!-- Processing Information -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">AI Processing</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Algorithm:</span>
+                                            <span class="text-sm font-medium text-success">Gen AI DR v2.1</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Processing Time:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white">2.3 seconds</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Enhancement Level:</span>
+                                            <span class="text-sm font-medium text-success">High</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Image Quality Metrics -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Quality Metrics</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">SNR Improvement:</span>
+                                            <span class="text-sm font-medium text-success">+45%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Contrast Enhancement:</span>
+                                            <span class="text-sm font-medium text-success">+32%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Noise Reduction:</span>
+                                            <span class="text-sm font-medium text-success">-28%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Technical Details -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Technical Details</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Output Format:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white">DICOM 16-bit</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">File Size:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white">2.7 MB</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Compression:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white">Lossless</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Original Metadata -->
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Original Metadata</h4>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Patient ID:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.patientId">P001234</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Study Date:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.studyDate">2024-01-15</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Modality:</span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white" data-bind="dicom.modality">CR</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DicomInfoPanel -->
+            </div>
+
+            <!-- Footer with Download Options -->
+            <!-- @COMPONENT: FooterBar [download buttons] -->
+            <div class="mt-6">
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-download text-primary text-xl"></i>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white">Download Options</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Save the enhanced DICOM image</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button class="border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2" data-event="click:downloadOriginal">
+                                <i class="fas fa-file-download"></i>
+                                <span>Original</span>
+                            </button>
+                            <button class="bg-primary hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2" data-event="click:downloadEnhanced">
+                                <i class="fas fa-download"></i>
+                                <span>Enhanced DICOM</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: FooterBar -->
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-xl flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+            <div>
+                <p class="font-medium text-gray-900 dark:text-white">Processing...</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400" id="loading-message">Uploading DICOM file</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            // Theme management
+            const themeToggle = document.getElementById('theme-toggle');
+            const html = document.documentElement;
+            
+            // Check for saved theme preference or default to 'light'
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            html.classList.toggle('dark', savedTheme === 'dark');
+            
+            themeToggle.addEventListener('click', () => {
+                const isDark = html.classList.contains('dark');
+                html.classList.toggle('dark');
+                localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            });
+
+            // Page navigation
+            const pageTabs = document.querySelectorAll('.page-tab');
+            const pageContents = document.querySelectorAll('.page-content');
+            
+            function showPage(pageId) {
+                // Update tabs
+                pageTabs.forEach(tab => {
+                    tab.classList.remove('active', 'border-primary', 'text-primary');
+                    tab.classList.add('border-transparent', 'text-gray-500');
+                });
+                
+                const activeTab = document.querySelector(`[data-page="${pageId}"]`);
+                activeTab.classList.add('active', 'border-primary', 'text-primary');
+                activeTab.classList.remove('border-transparent', 'text-gray-500');
+                
+                // Update page content
+                pageContents.forEach(page => page.classList.add('hidden'));
+                document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            }
+            
+            pageTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const pageId = tab.dataset.page;
+                    showPage(pageId);
+                });
+            });
+
+            // Toast notification
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toast-message');
+                const icon = toast.querySelector('i');
+                
+                toastMessage.textContent = message;
+                
+                // Update icon based on type
+                icon.className = type === 'success' ? 'fas fa-check-circle text-success' : 'fas fa-exclamation-circle text-red-500';
+                
+                // Show toast
+                toast.classList.remove('translate-x-full');
+                
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                }, 3000);
+            }
+
+            // Loading overlay
+            function showLoading(message) {
+                document.getElementById('loading-message').textContent = message;
+                document.getElementById('loading-overlay').classList.remove('hidden');
+            }
+            
+            function hideLoading() {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }
+
+            // Upload page functionality
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('file-input');
+            const fileInfo = document.getElementById('file-info');
+            const uploadSubmit = document.getElementById('upload-submit');
+            const submitText = document.getElementById('submit-text');
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('border-primary', 'bg-blue-50', 'dark:bg-blue-950');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('border-primary', 'bg-blue-50', 'dark:bg-blue-950');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('border-primary', 'bg-blue-50', 'dark:bg-blue-950');
+                const files = e.dataTransfer.files;
+                handleFileSelection(files[0]);
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                handleFileSelection(e.target.files[0]);
+            });
+            
+            function handleFileSelection(file) {
+                if (!file) return;
+                
+                // Validate file type
+                if (!file.name.toLowerCase().endsWith('.dcm')) {
+                    showToast('Please select a DICOM (.dcm) file', 'error');
+                    return;
+                }
+                
+                // Show file info
+                fileInfo.classList.remove('hidden');
+                fileInfo.querySelector('[data-bind="file.name"]').textContent = file.name;
+                fileInfo.querySelector('[data-bind="file.size"]').textContent = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+                
+                // Enable submit button
+                uploadSubmit.disabled = false;
+                submitText.textContent = 'Upload & Analyze';
+                uploadSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // Upload submit handler
+            uploadSubmit.addEventListener('click', async () => {
+                if (uploadSubmit.disabled) return;
+                
+                showLoading('Uploading DICOM file...');
+                
+                // TODO: Implement actual file upload to backend
+                setTimeout(() => {
+                    hideLoading();
+                    showToast('File uploaded successfully');
+                    showPage('viewer');
+                }, 2000);
+            });
+
+            // Process button handler (Page 2)
+            document.getElementById('process-btn').addEventListener('click', async () => {
+                showLoading('Processing with Gen AI DR...');
+                
+                // TODO: Implement actual processing API call
+                setTimeout(() => {
+                    hideLoading();
+                    showToast('AI enhancement completed');
+                    showPage('compare');
+                }, 3000);
+            });
+
+            // Before/After slider functionality
+            const sliderHandle = document.querySelector('.slider-handle');
+            const beforeAfterSlider = document.querySelector('.before-after-slider');
+            
+            if (sliderHandle && beforeAfterSlider) {
+                let isDragging = false;
+                
+                sliderHandle.addEventListener('mousedown', () => {
+                    isDragging = true;
+                    document.body.style.cursor = 'ew-resize';
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const rect = beforeAfterSlider.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+                    
+                    sliderHandle.style.left = percentage + '%';
+                    
+                    const beforeImage = beforeAfterSlider.querySelector('.before-image');
+                    beforeImage.style.flex = `0 0 ${percentage}%`;
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    document.body.style.cursor = '';
+                });
+            }
+
+            // Download handlers (Page 3)
+            const downloadButtons = document.querySelectorAll('[data-event*="download"]');
+            downloadButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const isEnhanced = e.target.closest('[data-event="click:downloadEnhanced"]');
+                    const filename = isEnhanced ? 'enhanced_image.dcm' : 'original_image.dcm';
+                    
+                    // TODO: Implement actual download via backend API
+                    showToast(`Downloading ${filename}...`);
+                });
+            });
+
+            // File info remove handler
+            document.querySelector('#file-info button').addEventListener('click', () => {
+                fileInfo.classList.add('hidden');
+                fileInput.value = '';
+                uploadSubmit.disabled = true;
+                submitText.textContent = 'Select a file to continue';
+                uploadSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+        })();
+    </script>
+</body>
+</html>

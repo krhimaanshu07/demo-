@@ -137,9 +137,9 @@ export default function UploadCard() {
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 or <span className="text-primary font-medium">click to browse</span>
               </p>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-2">
+              {/* <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-2">
                 Supports .dcm files up to 100MB
-              </p>
+              </p> */}
             </div>
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function UploadCard() {
               {uploadMutation.isPending
                 ? 'Uploading...'
                 : selectedFile
-                ? 'Upload & Analyze'
+                ? 'Upload'
                 : 'Select a file to continue'}
             </span>
             <ArrowRight className="w-4 h-4 ml-1 sm:ml-2" />
