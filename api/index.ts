@@ -1,5 +1,4 @@
 import express from "express";
-import { registerRoutes } from "../server/routes";
 
 const app = express();
 app.use(express.json());
@@ -20,8 +19,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Register all routes
-registerRoutes(app);
+// Simple health check route
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "DICOM Insight API is running" });
+});
+
+// Placeholder routes for future implementation
+app.post("/api/upload", (req, res) => {
+  res.json({ message: "Upload endpoint - to be implemented" });
+});
+
+app.get("/api/files", (req, res) => {
+  res.json({ files: [] });
+});
 
 // Error handling middleware
 app.use((err: any, _req: any, res: any, _next: any) => {
